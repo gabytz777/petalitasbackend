@@ -9,17 +9,20 @@ app.use(express.json());
 let messages = [];
 let lastMessageTime = {};
 
-/* SEND MESSAGE */
+/* =========================
+   SEND MESSAGE
+========================= */
 app.post("/send", (req, res) => {
     const { user, text, source } = req.body;
 
     if (!user || !text) {
-        return res.status(400).json({ error: "Missing data" });
+        return res.status(400).json({ error: "Missing user or text" });
     }
 
     const now = Date.now();
     const last = lastMessageTime[user] || 0;
 
+    // anti-spam cooldown
     if (now - last < 2000) {
         return res.status(429).json({ error: "Too fast" });
     }
@@ -27,9 +30,12 @@ app.post("/send", (req, res) => {
     lastMessageTime[user] = now;
 
     messages.push({
-        user,
-        text,
-        source: source || "unknown",
+        user: user.trim(),
+        text: text.trim(),
+
+        // 🔥 FIX: never allow undefined source
+        source: (source && source.trim()) || "unknown",
+
         time: now
     });
 
@@ -38,15 +44,21 @@ app.post("/send", (req, res) => {
     res.json({ ok: true });
 });
 
-/* GET MESSAGES */
+/* =========================
+   GET MESSAGES
+========================= */
 app.get("/messages", (req, res) => {
     res.json(messages);
 });
 
-/* ROOT */
+/* =========================
+   HEALTH CHECK
+========================= */
 app.get("/", (req, res) => {
     res.send("Chat API running");
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log("Running on " + PORT));
+app.listen(PORT, () => {
+    console.log("Server running on port " + PORT);
+});
