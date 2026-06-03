@@ -7,28 +7,21 @@ app.use(cors());
 app.use(express.json());
 
 let messages = [];
+let lastMessageTime = {};
 
-// Anti-spam tracking
-const lastMessageTime = {};
-
-// Send message
+/* SEND MESSAGE */
 app.post("/send", (req, res) => {
     const { user, text, source } = req.body;
 
     if (!user || !text) {
-        return res.status(400).json({
-            error: "Missing user or text"
-        });
+        return res.status(400).json({ error: "Missing data" });
     }
 
     const now = Date.now();
     const last = lastMessageTime[user] || 0;
 
-    // 2 second cooldown
     if (now - last < 2000) {
-        return res.status(429).json({
-            error: "Slow down"
-        });
+        return res.status(429).json({ error: "Too fast" });
     }
 
     lastMessageTime[user] = now;
@@ -40,28 +33,20 @@ app.post("/send", (req, res) => {
         time: now
     });
 
-    // Keep only newest 500 messages
-    if (messages.length > 500) {
-        messages.shift();
-    }
+    if (messages.length > 500) messages.shift();
 
-    res.json({
-        ok: true
-    });
+    res.json({ ok: true });
 });
 
-// Get messages
+/* GET MESSAGES */
 app.get("/messages", (req, res) => {
     res.json(messages);
 });
 
-// Optional homepage
+/* ROOT */
 app.get("/", (req, res) => {
-    res.send("Petalitas Chat API is running.");
+    res.send("Chat API running");
 });
 
 const PORT = process.env.PORT || 3000;
-
-app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-});
+app.listen(PORT, () => console.log("Running on " + PORT));
