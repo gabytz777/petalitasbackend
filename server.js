@@ -15,6 +15,9 @@ let lastMessageTime = {};
 app.post("/send", (req, res) => {
     const { user, text, source } = req.body;
 
+    // 🔍 DEBUG: shows exactly what arrives
+    console.log("RECEIVED BODY:", req.body);
+
     if (!user || !text) {
         return res.status(400).json({ error: "Missing user or text" });
     }
@@ -29,19 +32,29 @@ app.post("/send", (req, res) => {
 
     lastMessageTime[user] = now;
 
-    messages.push({
+    const msg = {
         user: user.trim(),
         text: text.trim(),
 
-        // 🔥 FIX: never allow undefined source
-        source: (source && source.trim()) || "unknown",
+        // 🔥 THIS IS THE FIX (never becomes undefined)
+        source: source ? source.trim() : "unknown",
 
         time: now
+    };
+
+    console.log("SAVED MESSAGE:", msg);
+
+    messages.push(msg);
+
+    // keep memory small
+    if (messages.length > 500) {
+        messages.shift();
+    }
+
+    res.json({
+        ok: true,
+        message: msg
     });
-
-    if (messages.length > 500) messages.shift();
-
-    res.json({ ok: true });
 });
 
 /* =========================
@@ -59,6 +72,7 @@ app.get("/", (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
+
 app.listen(PORT, () => {
-    console.log("Server running on port " + PORT);
+    console.log("Server running on port", PORT);
 });
